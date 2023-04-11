@@ -4,4 +4,9 @@
     <string name="app_name_subscript">(controller)</string>
     <string name="new_connection">Connect device</string>
     <string name="logo">logo</string>
+    <string name="make_visible_btn">Make Visible</string>
+    <string name="status_textview">status</string>
+    <string name="connect_guide">Open the Stellar Surfers app on your laptop\n
+        when ready, click the button below\n
+        to make the device visible to the laptop</string>
 </resources>

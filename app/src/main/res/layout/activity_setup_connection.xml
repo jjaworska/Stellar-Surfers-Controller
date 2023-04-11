@@ -11,29 +11,24 @@
         android:orientation="vertical">
 
         <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="@string/connect_guide" />
+        <TextView
             android:id="@+id/bluetoothStatusTv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="textview1"/>
-
-        <ImageView
-            android:id="@+id/bluetoothIv"
-            android:layout_width="100dp"
-            android:layout_height="100dp"
-            android:src="@drawable/ic_bluetooth_off" />
+            android:gravity="center"
+            android:padding="20dp"
+            android:textSize="20sp"
+            android:text="@string/status_textview"/>
 
         <Button
-            android:id="@+id/turnOnBtn"
+            android:id="@+id/startServerButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Turn On"
-            android:minWidth="200dp"/>
-
-        <Button
-            android:id="@+id/discoverableBtn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Discoverable"
+            android:text="@string/make_visible_btn"
             android:minWidth="200dp"/>
 
     </LinearLayout>
