@@ -16,20 +16,26 @@
             android:gravity="center"
             android:text="@string/connect_guide" />
         <TextView
-            android:id="@+id/bluetoothStatusTv"
+            android:id="@+id/bluetooth_status_tv"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:gravity="center"
             android:padding="20dp"
             android:textSize="20sp"
-            android:text="@string/status_textview"/>
+            android:text="@string/bluetooth_off"/>
 
         <Button
-            android:id="@+id/startServerButton"
+            android:id="@+id/start_server_button"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/make_visible_btn"
-            android:minWidth="200dp"/>
+            android:text="@string/make_visible_btn" />
+
+        <Button
+            android:id="@+id/play_button"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/play_btn"
+            android:visibility="invisible" />
 
     </LinearLayout>
 </layout>

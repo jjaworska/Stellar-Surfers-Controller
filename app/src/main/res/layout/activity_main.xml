@@ -10,11 +10,11 @@
         android:gravity="center"
         tools:context=".MainActivity">
 
-        <!-- <ImageView
+        <ImageView
             android:id="@+id/image_view"
             android:contentDescription="@string/logo"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"/> -->
+            android:layout_height="wrap_content"/>
 
         <TextView
             android:id="@+id/lolcat"

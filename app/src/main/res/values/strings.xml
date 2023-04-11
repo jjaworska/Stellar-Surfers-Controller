@@ -1,12 +1,19 @@
 <resources>
+    <!-- MainActivity -->
     <string name="app_name">Stellar Surfers Controller</string>
     <string name="app_name_short">Stellar\nSurfers</string>
     <string name="app_name_subscript">(controller)</string>
     <string name="new_connection">Connect device</string>
     <string name="logo">logo</string>
+    <!-- SetupConnectionActivity -->
     <string name="make_visible_btn">Make Visible</string>
-    <string name="status_textview">status</string>
+    <string name="bluetooth_off">Bluetooth off</string>
+    <string name="bluetooth_on">Bluetooth on</string>
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+    <string name="server_on">Server running</string>
     <string name="connect_guide">Open the Stellar Surfers app on your laptop\n
         when ready, click the button below\n
         to make the device visible to the laptop</string>
+    <string name="play_btn">Play!</string>
 </resources>

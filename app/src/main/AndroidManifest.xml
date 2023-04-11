@@ -38,14 +38,7 @@
                 android:value="" />
         </activity>
         <activity
-            android:name=".BluetoothScanActivity"
-            android:exported="false">
-            <meta-data
-                android:name="android.app.lib_name"
-                android:value="" />
-        </activity>
-        <activity
-            android:name=".NewConnectionActivity"
+            android:name=".GameActivity"
             android:exported="false">
             <meta-data
                 android:name="android.app.lib_name"
