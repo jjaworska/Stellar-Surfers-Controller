@@ -10,12 +10,14 @@ import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
 import java.io.IOException
 import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 
 class GameActivity : AppCompatActivity() {
     private lateinit var binding: ActivityGameBinding
     private lateinit var sensorManager: SensorManager
-    private lateinit var sensor: Sensor
+    private lateinit var accelerometerSensor: Sensor
+    private lateinit var geomagneticSensor : Sensor
     private val socket = SetupConnectionActivity.socket
     private val gyroListener = GyroListener()
 
@@ -23,12 +25,15 @@ class GameActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         binding = DataBindingUtil.setContentView(this, R.layout.activity_game)
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+
+        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        geomagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
         gyroListener.setOnSensorDataReceived {
             val sensorData = "${it[0]}\n${it[1]}\n${it[2]}"
             binding.monitor.text = sensorData
             val msg = "Rotation vector: "
-            val buffer = ByteBuffer.allocate(msg.length + 14).put(msg.toByteArray())
+            val buffer = ByteBuffer.allocate(msg.length + 14).order(ByteOrder.LITTLE_ENDIAN).put(msg.toByteArray())
             //for (c in msg)
             //    buffer.putChar(c)
             val bytes = buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2]).putChar('\n').array()
@@ -46,7 +51,8 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(gyroListener, sensor, SensorManager.SENSOR_DELAY_UI)
+        sensorManager.registerListener(gyroListener, accelerometerSensor, SensorManager.SENSOR_DELAY_UI)
+        sensorManager.registerListener(gyroListener, geomagneticSensor, SensorManager.SENSOR_DELAY_UI)
     }
 
     override fun onPause() {

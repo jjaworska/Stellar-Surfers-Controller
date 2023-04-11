@@ -19,7 +19,8 @@ import com.tcs.stellarsurfers.motion_sensors.GyroscopeUtils
 
 class MainActivity : Activity() {
     private lateinit var sensorManager: SensorManager
-    private lateinit var sensor: Sensor
+    private lateinit var accelerometerSensor: Sensor
+    private lateinit var geomagneticSensor : Sensor
     private lateinit var pixelArt: VectorDrawableCompat
     private lateinit var binding: ActivityMainBinding
     private val gyroListener = GyroListener()
@@ -29,7 +30,10 @@ class MainActivity : Activity() {
         binding = DataBindingUtil.setContentView(this, R.layout.activity_main)
         dealWithGUI()
         sensorManager = getSystemService(Context.SENSOR_SERVICE) as SensorManager
-        sensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+
+        accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        geomagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
         binding.connectButton.setOnClickListener {
             startActivity(Intent(this, SetupConnectionActivity::class.java))
         }
@@ -37,7 +41,8 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(gyroListener, sensor, SensorManager.SENSOR_DELAY_GAME)
+        sensorManager.registerListener(gyroListener, accelerometerSensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(gyroListener, geomagneticSensor, SensorManager.SENSOR_DELAY_GAME)
     }
 
     override fun onPause() {
