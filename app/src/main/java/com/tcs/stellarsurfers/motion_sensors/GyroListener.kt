@@ -1,7 +1,5 @@
 package com.tcs.stellarsurfers.motion_sensors
 
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener

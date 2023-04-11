@@ -92,24 +92,6 @@ class BluetoothServer (
         serverSocket?.close()
     }
 
-    fun broadcastMessage(message: String) {
-        val newMess = message + '\n'
-        clientSockets.forEach { socket ->
-            CoroutineScope(Dispatchers.IO).launch { sendMessage(socket, newMess) }
-        }
-    }
-
-    private fun sendMessage(socket: BluetoothSocket, message: String) {
-        Log.i(TAG, "Broadcast message '$message'")
-
-        val nullTerminatedMessage = (message + 4.toChar()).toByteArray()
-        try {
-            socket.outputStream.write(nullTerminatedMessage)
-            socket.outputStream.flush()
-        } catch (ignored: IOException) {
-        }
-    }
-
     private fun acceptConnection(): BluetoothSocket? {
         return try {
             serverSocket!!.accept()
