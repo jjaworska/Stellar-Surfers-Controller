@@ -57,6 +57,7 @@ class SetupConnectionActivity : AppCompatActivity() {
         server.setOnDisconnectListener {
             binding.bluetoothStatusTv.text = getString(R.string.disconnected)
             binding.playButton.isVisible = false
+            startActivity(Intent(this, SetupConnectionActivity::class.java))
         }
         server.setOnStateChangeListener {
             if (!it) binding.bluetoothStatusTv.text = getString(R.string.server_on)

@@ -10,12 +10,26 @@
         android:gravity="center"
         android:orientation="vertical">
 
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="14dp" />
+
         <TextView
             android:id="@+id/monitor"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:textSize="16sp"
-            android:gravity="center" />
+            android:layout_width="302dp"
+            android:layout_height="87dp"
+            android:gravity="center"
+            android:textSize="16sp" />
+
+        <Space
+            android:layout_width="match_parent"
+            android:layout_height="60dp" />
+
+        <Button
+            android:id="@+id/accelerate_button"
+            android:layout_width="match_parent"
+            android:layout_height="142dp"
+            android:text="@string/accelerate" />
 
     </LinearLayout>
 </layout>

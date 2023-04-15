@@ -16,4 +16,5 @@
         when ready, click the button below\n
         to make the device visible to the laptop</string>
     <string name="play_btn">Play!</string>
+    <string name="accelerate">Accelerate</string>
 </resources>

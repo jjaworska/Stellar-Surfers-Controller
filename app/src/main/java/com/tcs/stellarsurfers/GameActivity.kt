@@ -32,11 +32,24 @@ class GameActivity : AppCompatActivity() {
         gyroListener.setOnSensorDataReceived {
             val sensorData = "${it[0]}\n${it[1]}\n${it[2]}"
             binding.monitor.text = sensorData
-            val msg = "Rotation vector: "
-            val buffer = ByteBuffer.allocate(msg.length + 14).order(ByteOrder.LITTLE_ENDIAN).put(msg.toByteArray())
-            //for (c in msg)
-            //    buffer.putChar(c)
-            val bytes = buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2]).putChar('\n').array()
+
+            var acceleration = 0.0f
+            if(binding.accelerateButton.isPressed)
+                acceleration = 1.0f
+
+            /*
+             * data format:
+             * 3 floats - rotation angles
+             * 1 float - acceleration
+             *
+             * messages must be of constant size specified in messageSize
+             */
+
+            val messageSize = 12 + 4
+            val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN);
+            buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
+            buffer.putFloat(acceleration)
+            val bytes = buffer.array()
             sendMessage(bytes)
         }
     }
