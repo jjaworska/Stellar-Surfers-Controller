@@ -17,4 +17,6 @@
         to make the device visible to the laptop</string>
     <string name="play_btn">Play!</string>
     <string name="accelerate">Accelerate</string>
+    <string name="calibration_instructions">Place the device in front of you, this will be the initial direction of your flight</string>
+    <string name="ready_btn">Ready!</string>
 </resources>

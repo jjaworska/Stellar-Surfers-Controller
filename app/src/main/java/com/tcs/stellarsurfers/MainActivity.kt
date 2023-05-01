@@ -1,6 +1,5 @@
 package com.tcs.stellarsurfers
 
-import android.app.Activity
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
@@ -10,6 +9,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
 import android.view.ContextThemeWrapper
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.vectordrawable.graphics.drawable.VectorDrawableCompat
 import com.tcs.stellarsurfers.databinding.ActivityMainBinding
@@ -17,7 +17,7 @@ import com.tcs.stellarsurfers.motion_sensors.GyroListener
 import com.tcs.stellarsurfers.motion_sensors.GyroscopeUtils
 
 
-class MainActivity : Activity() {
+class MainActivity : AppCompatActivity() {
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometerSensor: Sensor
     private lateinit var geomagneticSensor : Sensor
@@ -55,6 +55,7 @@ class MainActivity : Activity() {
         val wrapper = ContextThemeWrapper(this, R.style.Theme_StellarSurfers)
         pixelArt = VectorDrawableCompat.create(resources, R.drawable.pixel_art, wrapper.theme)!!
         binding.imageView.setImageDrawable(pixelArt)
+        gyroListener.startMeasuring()
         gyroListener.setOnSensorDataReceived {
             val newColor = GyroscopeUtils.rotationVecToHSL(it)
             binding.lolcat.setTextColor(newColor)

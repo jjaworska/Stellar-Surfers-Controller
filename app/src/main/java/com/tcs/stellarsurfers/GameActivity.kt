@@ -5,6 +5,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
+import androidx.core.view.isVisible
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
@@ -29,29 +30,35 @@ class GameActivity : AppCompatActivity() {
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         geomagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
 
-        gyroListener.setOnSensorDataReceived {
-            val sensorData = "${it[0]}\n${it[1]}\n${it[2]}"
-            binding.monitor.text = sensorData
+        binding.readyBtn.setOnClickListener {
+            binding.getReady.isVisible = false
+            binding.controls.isVisible = true
+            gyroListener.startMeasuring()
+            gyroListener.setOnSensorDataReceived {
+                val sensorData = "${it[0]}\n${it[1]}\n${it[2]}"
+                binding.monitor.text = sensorData
 
-            var acceleration = 0.0f
-            if(binding.accelerateButton.isPressed)
-                acceleration = 1.0f
+                var acceleration = 0.0f
+                if(binding.accelerateButton.isPressed)
+                    acceleration = 1.0f
 
-            /*
-             * data format:
-             * 3 floats - rotation angles
-             * 1 float - acceleration
-             *
-             * messages must be of constant size specified in messageSize
-             */
+                /*
+                 * data format:
+                 * 3 floats - rotation angles
+                 * 1 float - acceleration
+                 *
+                 * messages must be of constant size specified in messageSize
+                 */
 
-            val messageSize = 12 + 4
-            val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN);
-            buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
-            buffer.putFloat(acceleration)
-            val bytes = buffer.array()
-            sendMessage(bytes)
+                val messageSize = 12 + 4
+                val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
+                buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
+                buffer.putFloat(acceleration)
+                val bytes = buffer.array()
+                sendMessage(bytes)
+            }
         }
+
     }
 
     private fun sendMessage(message: ByteArray) {

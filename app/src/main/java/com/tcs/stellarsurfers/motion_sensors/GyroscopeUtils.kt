@@ -1,6 +1,7 @@
 package com.tcs.stellarsurfers.motion_sensors
 
 import android.graphics.Color
+import kotlin.math.abs
 
 class GyroscopeUtils {
     companion object {
@@ -10,10 +11,12 @@ class GyroscopeUtils {
                         && (rotationVec[1] in -1.0..1.0)
                         && (rotationVec[2] in -1.0..1.0)
             )
-            val x = (rotationVec[0] + 1f) * 180f
-            val y = (rotationVec[1] + 1f) * 180f
-            val z = (rotationVec[2] + 1f) * 180f
-            return Color.HSVToColor(floatArrayOf((x + y + z) / 3, 1f, 1f))
+            val col = Color.rgb(abs(rotationVec[0]), abs(rotationVec[1]), abs(rotationVec[2]))
+            val hsv = FloatArray(3)
+            Color.colorToHSV(col, hsv)
+            hsv[1] = 1.0f
+            hsv[2] = 1.0f
+            return Color.HSVToColor(hsv)
         }
     }
 }

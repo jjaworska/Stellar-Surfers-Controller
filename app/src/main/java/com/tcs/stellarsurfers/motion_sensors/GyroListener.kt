@@ -16,6 +16,7 @@ class GyroListener : SensorEventListener {
 //    private var timestamp: Float = 0f
 //    private val EPSILON = 0.04
     private var isInitialized: Boolean = false
+    private var isQuerying: Boolean = false
     private var initialRotation = floatArrayOf(0f,0f,0f)
     private var rotationCurrent = floatArrayOf(1f, 0f, 0f)
 
@@ -31,7 +32,14 @@ class GyroListener : SensorEventListener {
         onSensorDataReceived = listener
     }
 
+    public fun startMeasuring() {
+        isQuerying = true
+    }
+
     override fun onSensorChanged(event: SensorEvent?) {
+        if (!isQuerying)
+            return
+
         if (event!!.sensor.type === Sensor.TYPE_ACCELEROMETER) mGravity = event!!.values
 
         if (event!!.sensor.type === Sensor.TYPE_MAGNETIC_FIELD) mGeomagnetic = event!!.values
