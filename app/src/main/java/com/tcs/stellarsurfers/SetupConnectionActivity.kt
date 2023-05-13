@@ -1,25 +1,27 @@
 package com.tcs.stellarsurfers
 
-import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.graphics.Color
 import android.os.Build
-import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.bluetooth.BluetoothServer
 import com.tcs.stellarsurfers.databinding.ActivitySetupConnectionBinding
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.util.*
 
 
@@ -71,11 +73,13 @@ class SetupConnectionActivity : AppCompatActivity() {
     private fun awaitStartSignal() {
         Dispatchers.IO.run {
             try {
-                val buffer = ByteArray(12)
+                Log.i("SetupConnectionActivity", "in await start signal")
+                val buffer = ByteArray(6)
                 socket.inputStream.read(buffer)
                 Log.i("SetupConnectionActivity", "Received start signal")
                 startGame()
             } catch (ignored: IOException) {
+                Log.i("SetupConnectionActivity", "exception in await start signal")
             }
         }
     }

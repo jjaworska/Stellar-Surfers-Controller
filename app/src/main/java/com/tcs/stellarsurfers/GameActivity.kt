@@ -7,6 +7,7 @@ import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.*
+import android.util.Log
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -15,9 +16,14 @@ import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.text.DecimalFormat
 import kotlin.math.abs
 
 
@@ -31,6 +37,12 @@ class GameActivity : AppCompatActivity() {
     private var accelerationValue: Float = 0.0f
     private val socket = SetupConnectionActivity.socket
     private val gyroListener = GyroListener()
+
+    private var x: Float = 0.0f
+    private var y: Float = 0.0f
+    private var z: Float = 0.0f
+    private var speed: Float = 0.0f
+    private var accel: Float = 0.0f
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,7 +71,9 @@ class GameActivity : AppCompatActivity() {
                 }
                 floatArr[2] = 1.0f
                 val accelerationColor = Color.HSVToColor(floatArr)
-                binding.monitor.text = accelerationValue.toString()
+                accel = accelerationValue
+                updateMonitor()
+                //binding.monitor.text = accelerationValue.toString()
                 if (seekBar != null) {
                     seekBar.progressDrawable.colorFilter =
                         PorterDuffColorFilter(accelerationColor, PorterDuff.Mode.SRC_ATOP)
@@ -99,6 +113,33 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
+        MainScope().launch {
+            val messageLength = 16
+            val message = ByteArray(messageLength)
+            while(true) {
+                withContext(Dispatchers.IO) {
+                    SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
+
+                    val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
+                    x = buffer.float
+                    y = buffer.float
+                    z = buffer.float
+                    speed = buffer.float
+                    updateMonitor()
+                    //Log.i("Receiver", "got message $message $x, $y, $z, $speed")
+                }
+
+            }
+        }
+
+    }
+
+    private fun updateMonitor() {
+        val s = "X: $x, Y: $y, Z: $z, speed: $speed"
+//        val s = "X: " + "%06f".format(x) + "Y: " + "%06f".format(y) + "Z: " + "%06f".format(z) +
+//                "speed: " + "%06.2f".format(speed)
+        //Log.i("abc", s)
+        binding.monitor.text = s
     }
 
     private fun sendMessage(message: ByteArray) {
