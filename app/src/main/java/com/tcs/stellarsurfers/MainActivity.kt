@@ -3,8 +3,6 @@ package com.tcs.stellarsurfers
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
-import android.graphics.PorterDuff
-import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.Bundle
@@ -58,9 +56,7 @@ class MainActivity : AppCompatActivity() {
         gyroListener.startMeasuring()
         gyroListener.setOnSensorDataReceived {
             val newColor = GyroscopeUtils.rotationVecToHSL(it)
-            binding.lolcat.setTextColor(newColor)
-            pixelArt.colorFilter = PorterDuffColorFilter(newColor, PorterDuff.Mode.SRC_IN)
-            binding.imageView.invalidate()
+            binding.connectButton.setBackgroundColor(newColor)
         }
     }
 }

@@ -8,17 +8,37 @@
 
         <LinearLayout
             android:id="@+id/get_ready"
+            android:orientation="horizontal"
             android:layout_width="match_parent"
             android:layout_height="match_parent">
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/calibration_instructions" />
-            <Button
-                android:id="@+id/ready_btn"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="@string/ready_btn" />
+            <ImageView
+                android:layout_weight="5"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent"
+                android:src="@drawable/calibrate"
+                android:padding="20dp"
+                android:contentDescription="@string/compass" />
+            <LinearLayout
+                android:orientation="vertical"
+                android:gravity="center"
+                android:layout_weight="3"
+                android:layout_height="match_parent"
+                android:layout_width="match_parent">
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textSize="16sp"
+                    android:padding="20dp"
+                    android:text="@string/calibration_instructions" />
+                <Button
+                    android:id="@+id/ready_btn"
+                    android:background="@color/blue"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="@font/fancy"
+                    android:text="@string/ready_btn" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
@@ -28,28 +48,32 @@
             android:layout_height="match_parent"
             tools:context=".SetupConnectionActivity"
             android:gravity="center"
-            android:orientation="vertical">
-
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="14dp" />
+            android:orientation="horizontal">
 
             <TextView
                 android:id="@+id/monitor"
-                android:layout_width="302dp"
-                android:layout_height="87dp"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="8"
                 android:gravity="center"
                 android:textSize="16sp" />
 
-            <Space
-                android:layout_width="match_parent"
-                android:layout_height="60dp" />
-
-            <Button
-                android:id="@+id/accelerate_button"
-                android:layout_width="match_parent"
-                android:layout_height="142dp"
-                android:text="@string/accelerate" />
+            <LinearLayout
+                android:layout_width="0dp"
+                android:layout_weight="2"
+                android:layout_height="match_parent">
+                <SeekBar
+                    android:id="@+id/acceleration"
+                    android:layout_width="240dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:padding="20dp"
+                    android:progressDrawable="@drawable/seekbar_style"
+                    android:thumb="@drawable/seekbar_thumb"
+                    android:rotation="270"
+                    android:max="100"
+                    android:progress="20"/>
+            </LinearLayout>
 
         </LinearLayout>
 

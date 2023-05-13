@@ -12,11 +12,15 @@
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
     <string name="server_on">Server running</string>
-    <string name="connect_guide">Open the Stellar Surfers app on your laptop\n
-        when ready, click the button below\n
-        to make the device visible to the laptop</string>
+    <string name="connect_guide">
+        1. Open the Stellar Surfers app on your laptop\n
+        2. When ready, click the button below\n
+        to make the device visible to the laptop\n
+        3. Connect with the device from your laptop\n
+        4. Start the game from your laptop</string>
     <string name="play_btn">Play!</string>
     <string name="accelerate">Accelerate</string>
-    <string name="calibration_instructions">Place the device in front of you, this will be the initial direction of your flight</string>
+    <string name="calibration_instructions">Place the device in front of you\nThis will be the initial direction of your flight</string>
     <string name="ready_btn">Ready!</string>
+    <string name="compass">compass</string>
 </resources>

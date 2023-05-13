@@ -1,9 +1,11 @@
 package com.tcs.stellarsurfers
 
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothAdapter
 import android.bluetooth.BluetoothManager
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
@@ -41,24 +43,20 @@ class SetupConnectionActivity : AppCompatActivity() {
         } else if (!bAdapter.isEnabled) {
             val intent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
             resultTurnOnLauncher.launch(intent)
-        } else {
-            binding.bluetoothStatusTv.text = getString(R.string.bluetooth_on)
         }
 
         server = BluetoothServer(bAdapter, "Stellar-Surfers", UUID.fromString("f296bf37-5412-460d-954d-2fcc31b072c0"))
         server.setOnConnectListener {
-            binding.bluetoothStatusTv.text = getString(R.string.connected)
             Toast.makeText(applicationContext, "Connected", Toast.LENGTH_SHORT).show()
             server.stop()
             socket = it
             awaitStartSignal()
         }
         server.setOnDisconnectListener {
-            binding.bluetoothStatusTv.text = getString(R.string.disconnected)
-            startActivity(Intent(this, SetupConnectionActivity::class.java))
+            binding.startServerButton.setBackgroundColor(Color.RED)
         }
         server.setOnStateChangeListener {
-            if (!it) binding.bluetoothStatusTv.text = getString(R.string.server_on)
+            binding.startServerButton.setBackgroundColor(Color.CYAN)
         }
         binding.startServerButton.setOnClickListener {
             MainScope().launch {
@@ -93,7 +91,7 @@ class SetupConnectionActivity : AppCompatActivity() {
 
     private var resultTurnOnLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
         when (result.resultCode) {
-            RESULT_OK -> binding.bluetoothStatusTv.text = getString(R.string.bluetooth_on)
+            RESULT_OK -> binding.startServerButton.setBackgroundColor(Color.BLUE)
             else -> exitBecause("App requires bluetooth")
         }
     }
