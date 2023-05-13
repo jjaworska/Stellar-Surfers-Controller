@@ -57,9 +57,7 @@ class BluetoothServer (
     }
 
     @SuppressLint("InlinedApi")
-    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_CONNECT, Manifest.permission.BLUETOOTH,
-        Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_ADVERTISE])
-    //@RequiresPermission(Manifest.permission.BLUETOOTH_CONNECT)
+    @RequiresPermission(allOf = [Manifest.permission.BLUETOOTH_SCAN, Manifest.permission.BLUETOOTH_CONNECT])
     suspend fun startLoop() = withContext(Dispatchers.IO) {
         serverSocket = bluetoothAdapter
             .listenUsingRfcommWithServiceRecord(serviceName, serviceUUID)
