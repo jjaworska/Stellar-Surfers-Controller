@@ -7,11 +7,9 @@ import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.*
-import android.util.Log
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import androidx.core.graphics.ColorUtils.HSLToColor
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
@@ -23,7 +21,6 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
-import java.text.DecimalFormat
 import kotlin.math.abs
 
 
@@ -43,6 +40,7 @@ class GameActivity : AppCompatActivity() {
     private var z: Float = 0.0f
     private var speed: Float = 0.0f
     private var accel: Float = 0.0f
+    private var collision: Int = 0
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -94,8 +92,6 @@ class GameActivity : AppCompatActivity() {
             binding.controls.isVisible = true
             gyroListener.startMeasuring()
             gyroListener.setOnSensorDataReceived {
-                val sensorData = "${it[0]}\n${it[1]}\n${it[2]}"
-
                 /*
                  * data format:
                  * 3 floats - rotation angles
@@ -121,10 +117,18 @@ class GameActivity : AppCompatActivity() {
                     SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
 
                     val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
-                    x = buffer.float
+                    val new_x = buffer.float
+                    if (abs(new_x - x) > 1.0)
+                        runOnUiThread{ binding.root.setBackgroundColor(Color.RED) }
+                    x = new_x
                     y = buffer.float
                     z = buffer.float
                     speed = buffer.float
+                    // val isColliding = buffer.int
+                    val isColliding = 0
+                    collision += isColliding
+                    if (isColliding == 0)
+                        collision = 0
                     updateMonitor()
                     //Log.i("Receiver", "got message $message $x, $y, $z, $speed")
                 }
@@ -135,11 +139,17 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun updateMonitor() {
-        val s = "X: $x, Y: $y, Z: $z, speed: $speed"
+        val s = "X: $x, Y: $y, Z: $z\n\nspeed: $speed, collision: $collision"
 //        val s = "X: " + "%06f".format(x) + "Y: " + "%06f".format(y) + "Z: " + "%06f".format(z) +
 //                "speed: " + "%06.2f".format(speed)
         //Log.i("abc", s)
-        binding.monitor.text = s
+        this@GameActivity.runOnUiThread {
+            if (collision >= 100)
+                binding.root.setBackgroundColor(Color.RED)
+            else
+                binding.root.setBackgroundColor(Color.BLACK)
+            binding.monitor.text = s
+        }
     }
 
     private fun sendMessage(message: ByteArray) {
