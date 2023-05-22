@@ -7,6 +7,7 @@ import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.*
+import android.util.Log
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -110,26 +111,43 @@ class GameActivity : AppCompatActivity() {
         }
 
         MainScope().launch {
-            val messageLength = 16
+            val messageLength = 20
             val message = ByteArray(messageLength)
             while(true) {
                 withContext(Dispatchers.IO) {
-                    SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
+//                    var bytesToRead = messageLength
+//                    var bufferOffset = 0;
+//                    while (bytesToRead > 0) {
+//                        val readBytes = SetupConnectionActivity.socket.inputStream.read(
+//                            message,
+//                            bufferOffset,
+//                            bytesToRead
+//                        )
+//                        if(readBytes != messageLength)
+//                            Log.i("Read", "$bytesToRead, $bufferOffset, $readBytes")
+//                        bytesToRead -= readBytes
+//                        bufferOffset += readBytes
+//                    }
+                    val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
+                    if(len == messageLength) {
+                        val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
+//                        val new_x = buffer.float
+//                        if (abs(new_x - x) > 1.0) {
+//                            runOnUiThread { binding.root.setBackgroundColor(Color.RED) }
+//                            Log.i("Receiver", "$new_x, $x")
+//                        }
 
-                    val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
-                    val new_x = buffer.float
-                    if (abs(new_x - x) > 1.0)
-                        runOnUiThread{ binding.root.setBackgroundColor(Color.RED) }
-                    x = new_x
-                    y = buffer.float
-                    z = buffer.float
-                    speed = buffer.float
-                    // val isColliding = buffer.int
-                    val isColliding = 0
-                    collision += isColliding
-                    if (isColliding == 0)
-                        collision = 0
-                    updateMonitor()
+                        x = buffer.float
+                        y = buffer.float
+                        z = buffer.float
+                        speed = buffer.float
+                        val isColliding = buffer.int
+                        //val isColliding = 0
+                        collision += isColliding
+                        if (isColliding == 0)
+                            collision = 0
+                        updateMonitor()
+                    }
                     //Log.i("Receiver", "got message $message $x, $y, $z, $speed")
                 }
 
@@ -144,7 +162,7 @@ class GameActivity : AppCompatActivity() {
 //                "speed: " + "%06.2f".format(speed)
         //Log.i("abc", s)
         this@GameActivity.runOnUiThread {
-            if (collision >= 100)
+            if (collision >= 1)
                 binding.root.setBackgroundColor(Color.RED)
             else
                 binding.root.setBackgroundColor(Color.BLACK)
