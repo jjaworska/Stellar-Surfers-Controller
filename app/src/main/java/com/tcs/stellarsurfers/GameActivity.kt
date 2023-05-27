@@ -111,42 +111,33 @@ class GameActivity : AppCompatActivity() {
         }
 
         MainScope().launch {
-            val messageLength = 20
+            val messageLength = 24
             val message = ByteArray(messageLength)
             while(true) {
                 withContext(Dispatchers.IO) {
-//                    var bytesToRead = messageLength
-//                    var bufferOffset = 0;
-//                    while (bytesToRead > 0) {
-//                        val readBytes = SetupConnectionActivity.socket.inputStream.read(
-//                            message,
-//                            bufferOffset,
-//                            bytesToRead
-//                        )
-//                        if(readBytes != messageLength)
-//                            Log.i("Read", "$bytesToRead, $bufferOffset, $readBytes")
-//                        bytesToRead -= readBytes
-//                        bufferOffset += readBytes
-//                    }
                     val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
                     if(len == messageLength) {
                         val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
-//                        val new_x = buffer.float
-//                        if (abs(new_x - x) > 1.0) {
-//                            runOnUiThread { binding.root.setBackgroundColor(Color.RED) }
-//                            Log.i("Receiver", "$new_x, $x")
-//                        }
-
-                        x = buffer.float
-                        y = buffer.float
-                        z = buffer.float
-                        speed = buffer.float
+                        val newX = buffer.float
+                        val newY = buffer.float
+                        val newZ = buffer.float
+                        val newSpeed = buffer.float
                         val isColliding = buffer.int
-                        //val isColliding = 0
-                        collision += isColliding
-                        if (isColliding == 0)
-                            collision = 0
-                        updateMonitor()
+                        val hash = buffer.float
+
+                        if(hash == newX + newY + newZ + newSpeed + isColliding) {
+                            x = newX
+                            y = newY
+                            z = newZ
+                            speed = newSpeed
+                            collision += isColliding
+                            if (isColliding == 0)
+                                collision = 0
+                            updateMonitor()
+                        }
+//                        else {
+//                            Log.i("Alarm!!", "$hash, ${newX + newY + newZ + newSpeed + isColliding}")
+//                        }
                     }
                     //Log.i("Receiver", "got message $message $x, $y, $z, $speed")
                 }
