@@ -1,13 +1,17 @@
 package com.tcs.stellarsurfers
 
 import android.content.Context
+import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
 import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.os.*
-import android.util.Log
+import android.text.SpannableString
+import android.text.style.RelativeSizeSpan
+import android.view.animation.AlphaAnimation
+import android.view.animation.Animation
 import android.widget.SeekBar
 import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
@@ -20,9 +24,13 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
+import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.text.SimpleDateFormat
+import java.util.Date
 import kotlin.math.abs
+import kotlin.math.roundToInt
 
 
 class GameActivity : AppCompatActivity() {
@@ -41,7 +49,10 @@ class GameActivity : AppCompatActivity() {
     private var z: Float = 0.0f
     private var speed: Float = 0.0f
     private var accel: Float = 0.0f
-    private var collision: Int = 0
+    private var colliding: Int = 0
+    private var damage: Int = 0
+    private var statistics: String = "speed\nX: $x\nY: $y\nZ: $z"
+    private var collisionLog: String = "\n"
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -60,23 +71,8 @@ class GameActivity : AppCompatActivity() {
         binding.acceleration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 accelerationValue = (progress.toFloat() - 20.0f) / 10.0f
-                val floatArr = FloatArray(3)
-                if (accelerationValue < 0.0f) {
-                    floatArr[0] = 240.0f
-                    floatArr[1] = -accelerationValue / 1.5f
-                } else {
-                    floatArr[0] = 0.0f
-                    floatArr[1] = accelerationValue / 8.5f
-                }
-                floatArr[2] = 1.0f
-                val accelerationColor = Color.HSVToColor(floatArr)
                 accel = accelerationValue
                 updateMonitor()
-                //binding.monitor.text = accelerationValue.toString()
-                if (seekBar != null) {
-                    seekBar.progressDrawable.colorFilter =
-                        PorterDuffColorFilter(accelerationColor, PorterDuff.Mode.SRC_ATOP)
-                }
             }
 
             @RequiresApi(Build.VERSION_CODES.Q)
@@ -87,6 +83,9 @@ class GameActivity : AppCompatActivity() {
             override fun onStopTrackingTouch(seekBar: SeekBar?) {
             }
         })
+
+        val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
+        binding.damage.text = s
 
         binding.readyBtn.setOnClickListener {
             binding.getReady.isVisible = false
@@ -130,16 +129,11 @@ class GameActivity : AppCompatActivity() {
                             y = newY
                             z = newZ
                             speed = newSpeed
-                            collision += isColliding
-                            if (isColliding == 0)
-                                collision = 0
+                            if (isColliding != colliding)
+                                collisionStateChange(isColliding)
                             updateMonitor()
                         }
-//                        else {
-//                            Log.i("Alarm!!", "$hash, ${newX + newY + newZ + newSpeed + isColliding}")
-//                        }
                     }
-                    //Log.i("Receiver", "got message $message $x, $y, $z, $speed")
                 }
 
             }
@@ -147,17 +141,84 @@ class GameActivity : AppCompatActivity() {
 
     }
 
-    private fun updateMonitor() {
-        val s = "X: $x, Y: $y, Z: $z\n\nspeed: $speed, collision: $collision"
-//        val s = "X: " + "%06f".format(x) + "Y: " + "%06f".format(y) + "Z: " + "%06f".format(z) +
-//                "speed: " + "%06.2f".format(speed)
-        //Log.i("abc", s)
+    private fun gameOver() {
         this@GameActivity.runOnUiThread {
-            if (collision >= 1)
-                binding.root.setBackgroundColor(Color.RED)
+            binding.controls.isVisible = false
+            binding.gameOver.isVisible = true
+            binding.root.invalidate()
+        }
+
+        vibrate(1000)
+        Handler(Looper.getMainLooper()).postDelayed({
+            startActivity(Intent(this, MainActivity::class.java))
+        }, 3000)
+    }
+
+    private fun collisionStateChange(newState: Int) {
+        colliding = newState
+        if (colliding == 1) {  // COLLIDING
+            vibrate(500)
+            val damagePts = (abs(speed) * 30).roundToInt()
+            damage = min(damage + damagePts, 30)
+            val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
+            binding.damage.text = s
+            if (damage >= 20) {  // start blinking
+                binding.controlCollision.colorFilter =
+                    PorterDuffColorFilter(Color.RED, PorterDuff.Mode.SRC_ATOP)
+                val blinking: Animation = AlphaAnimation(0.0f, 1.0f)
+                blinking.duration = 500
+                blinking.startOffset = 20
+                blinking.repeatMode = Animation.REVERSE
+                blinking.repeatCount = Animation.INFINITE
+                binding.controlCollision.startAnimation(blinking)
+            }
+            // create log entry
+            val sdf = SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z")
+            val currentDateAndTime = sdf.format(Date())
+            var newLog = "\$ $currentDateAndTime: "
+            if (damagePts < 3)
+                newLog += "minor collision"
+            else if (damagePts <= 5)
+                newLog += "collision"
             else
-                binding.root.setBackgroundColor(Color.BLACK)
+                newLog += "major collision"
+            if (collisionLog.count{it == '\n'} > 2)
+                collisionLog = collisionLog.substring(collisionLog.indexOf('\n') + 1)
+            collisionLog += '\n'
+            collisionLog += newLog
+            if (damage >= 30)
+                gameOver()
+        }
+    }
+
+    private fun updateMonitor() {
+        this@GameActivity.runOnUiThread {
+            statistics = "Speed: $speed\nX: $x\nY: $y\nZ: $z"
+            val l: Int = statistics.length
+            val s = SpannableString(statistics + "\n" + collisionLog)
+            s.setSpan(RelativeSizeSpan(0.6f), l + 1, s.length, 0)
             binding.monitor.text = s
+            // speed control light color
+            val floatArr = FloatArray(3)
+            if (accelerationValue < 0.0f) {
+                floatArr[0] = 240.0f
+                floatArr[1] = -accelerationValue / 1.5f
+            } else {
+                floatArr[0] = 0.0f
+                floatArr[1] = accelerationValue / 8.5f
+            }
+            floatArr[2] = 1.0f
+            val accelerationColor = Color.HSVToColor(floatArr)
+            binding.controlSpeed.colorFilter =
+                PorterDuffColorFilter(accelerationColor, PorterDuff.Mode.SRC_ATOP)
+        }
+    }
+
+    private fun vibrate(duration: Long) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+        } else {
+            vibrator.vibrate(duration)
         }
     }
 

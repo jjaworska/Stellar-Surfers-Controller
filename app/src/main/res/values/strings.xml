@@ -23,4 +23,8 @@
     <string name="calibration_instructions">Place the device in front of you\nThis will be the initial direction of your flight</string>
     <string name="ready_btn">Ready!</string>
     <string name="compass">compass</string>
+    <string name="control_light">Control light</string>
+    <string name="game_over">GAME\nOVER</string>
+    <string name="engine_power">  Engine power: </string>
+    <string name="engine_health">  Engine health: </string>
 </resources>

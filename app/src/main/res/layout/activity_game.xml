@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <FrameLayout
+        android:id="@+id/root"
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
 
@@ -50,13 +51,85 @@
             android:gravity="center"
             android:orientation="horizontal">
 
-            <TextView
-                android:id="@+id/monitor"
+            <LinearLayout
+                android:orientation="vertical"
                 android:layout_width="0dp"
-                android:layout_height="wrap_content"
                 android:layout_weight="8"
-                android:gravity="center"
-                android:textSize="16sp" />
+                android:layout_height="match_parent">
+                <LinearLayout
+                    android:orientation="horizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="40dp">
+                    <TextView
+                        android:paddingTop="9dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/monospace"
+                        android:textColor="@color/grey"
+                        android:text="@string/engine_power"/>
+                    <ImageView
+                        android:padding="5dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/control_light"
+                        android:contentDescription="@string/control_light"
+                        android:id="@+id/control_speed"/>
+                    <TextView
+                        android:paddingTop="9dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/monospace"
+                        android:textColor="@color/grey"
+                        android:text="@string/engine_health"/>
+                    <ImageView
+                        android:padding="5dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/control_light"
+                        android:contentDescription="@string/control_light"
+                        android:id="@+id/control_collision"/>
+                    <TextView
+                        android:paddingTop="9dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:textSize="16sp"
+                        android:fontFamily="@font/monospace"
+                        android:textColor="@color/grey"
+                        android:text="  TBA: "/>
+                    <ImageView
+                        android:padding="5dp"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:src="@drawable/control_light"
+                        android:contentDescription="@string/control_light"
+                        android:id="@+id/control_tba"/>
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/monitor"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="5"
+                    android:background="@drawable/border"
+                    android:gravity="start"
+                    android:padding="20dp"
+                    android:textColor="@color/blue"
+                    android:fontFamily="@font/monospace"
+                    android:textSize="18sp" />
+                <TextView
+                    android:id="@+id/damage"
+                    android:layout_width="match_parent"
+                    android:layout_height="0dp"
+                    android:layout_weight="2"
+                    android:background="@drawable/border"
+                    android:gravity="start"
+                    android:padding="20dp"
+                    android:textColor="@color/blue"
+                    android:fontFamily="@font/monospace"
+                    android:textSize="18sp" />
+            </LinearLayout>
 
             <LinearLayout
                 android:layout_width="0dp"
@@ -75,6 +148,22 @@
                     android:progress="20"/>
             </LinearLayout>
 
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/game_over"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="invisible"
+            android:background="@color/red" >
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textSize="40sp"
+                android:textColor="@color/white"
+                android:fontFamily="@font/fancy"
+                android:text="@string/game_over"/>
         </LinearLayout>
 
     </FrameLayout>
