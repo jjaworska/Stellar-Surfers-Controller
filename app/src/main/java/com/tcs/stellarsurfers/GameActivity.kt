@@ -5,11 +5,15 @@ import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.TransitionDrawable
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.media.MediaPlayer
 import android.os.*
 import android.text.SpannableString
 import android.text.style.RelativeSizeSpan
+import android.util.Log
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.SeekBar
@@ -43,6 +47,10 @@ class GameActivity : AppCompatActivity() {
     private var accelerationValue: Float = 0.0f
     private val socket = SetupConnectionActivity.socket
     private val gyroListener = GyroListener()
+    // alternatives: collision2, collision3
+    private lateinit var collisionSound: MediaPlayer
+    private lateinit var successSound: MediaPlayer
+    private lateinit var gameOverSound: MediaPlayer
 
     private var x: Float = 0.0f
     private var y: Float = 0.0f
@@ -91,6 +99,7 @@ class GameActivity : AppCompatActivity() {
             binding.getReady.isVisible = false
             binding.controls.isVisible = true
             gyroListener.startMeasuring()
+
             gyroListener.setOnSensorDataReceived {
                 /*
                  * data format:
@@ -109,6 +118,11 @@ class GameActivity : AppCompatActivity() {
             }
         }
 
+        // initialize sound effects
+        collisionSound = MediaPlayer.create(applicationContext, R.raw.collision1)
+        successSound = MediaPlayer.create(applicationContext, R.raw.success2)
+        gameOverSound = MediaPlayer.create(applicationContext, R.raw.tinnitus2)
+
         MainScope().launch {
             val messageLength = 24
             val message = ByteArray(messageLength)
@@ -124,13 +138,15 @@ class GameActivity : AppCompatActivity() {
                         val isColliding = buffer.int
                         val hash = buffer.float
 
+                        Log.e("new batch", "$newX $newY $newZ $isColliding")
                         if(hash == newX + newY + newZ + newSpeed + isColliding) {
                             x = newX
                             y = newY
                             z = newZ
                             speed = newSpeed
-                            if (isColliding != colliding)
+                            if (isColliding != colliding) {
                                 collisionStateChange(isColliding)
+                            }
                             updateMonitor()
                         }
                     }
@@ -141,25 +157,42 @@ class GameActivity : AppCompatActivity() {
 
     }
 
-    private fun gameOver() {
+    private suspend fun gameOver() {
+        withContext(Dispatchers.Default) {
+            gameOverSound.start()
+        }
+
         this@GameActivity.runOnUiThread {
             binding.controls.isVisible = false
             binding.gameOver.isVisible = true
-            binding.root.invalidate()
+            val colors = arrayOf(ColorDrawable(Color.BLACK), ColorDrawable(Color.RED))
+            val mTransition = TransitionDrawable(colors)
+            binding.gameOver.background = mTransition
+            mTransition.startTransition(5000)
+            binding.gameOverText.isVisible = true
+            val gameOverAnimation = AlphaAnimation(0.0f, 1.0f)
+            gameOverAnimation.duration = 2000
+            binding.gameOverText.startAnimation(gameOverAnimation)
+            // binding.root.invalidate()
         }
 
         vibrate(1000)
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
-        }, 3000)
+        }, 15000)
     }
 
-    private fun collisionStateChange(newState: Int) {
+    private suspend fun collisionStateChange(newState: Int) {
         colliding = newState
         if (colliding == 1) {  // COLLIDING
+            // play collision sound
+            withContext(Dispatchers.Default) {
+                collisionSound.start()
+            }
             vibrate(500)
             val damagePts = (abs(speed) * 30).roundToInt()
-            damage = min(damage + damagePts, 30)
+            // damage = min(damage + damagePts, 30)
+            damage = min(damage + 15, 30)
             val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
             binding.damage.text = s
             if (damage >= 20) {  // start blinking
@@ -211,6 +244,7 @@ class GameActivity : AppCompatActivity() {
             val accelerationColor = Color.HSVToColor(floatArr)
             binding.controlSpeed.colorFilter =
                 PorterDuffColorFilter(accelerationColor, PorterDuff.Mode.SRC_ATOP)
+            binding.monitor.invalidate()
         }
     }
 
