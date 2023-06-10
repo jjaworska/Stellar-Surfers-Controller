@@ -23,6 +23,9 @@ import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
+import com.tcs.stellarsurfers.motion_sensors.orientationProvider.ImprovedOrientationSensor1Provider
+import com.tcs.stellarsurfers.motion_sensors.orientationProvider.ImprovedOrientationSensor2Provider
+import com.tcs.stellarsurfers.motion_sensors.orientationProvider.OrientationProvider.OrientationProviderListener
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -37,7 +40,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 
-class GameActivity : AppCompatActivity() {
+class GameActivity : AppCompatActivity(), OrientationProviderListener {
     private lateinit var binding: ActivityGameBinding
     private lateinit var sensorManager: SensorManager
     private lateinit var accelerometerSensor: Sensor
@@ -46,7 +49,8 @@ class GameActivity : AppCompatActivity() {
     private lateinit var vibrator: Vibrator
     private var accelerationValue: Float = 0.0f
     private val socket = SetupConnectionActivity.socket
-    private val gyroListener = GyroListener()
+    // private val gyroListener = GyroListener()
+    private lateinit var gyroListener: ImprovedOrientationSensor2Provider
     // alternatives: collision2, collision3
     private lateinit var collisionSound: MediaPlayer
     private lateinit var successSound: MediaPlayer
@@ -61,6 +65,8 @@ class GameActivity : AppCompatActivity() {
     private var damage: Int = 0
     private var statistics: String = "speed\nX: $x\nY: $y\nZ: $z"
     private var collisionLog: String = "\n"
+    private var orientationInitial = FloatArray(4)
+    private var initiated: Boolean = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,6 +78,10 @@ class GameActivity : AppCompatActivity() {
         } else {
             vibrator = getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
         }
+
+        gyroListener = ImprovedOrientationSensor2Provider(sensorManager)
+        gyroListener.addListener(this)
+        gyroListener.start()
 
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         geomagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
@@ -98,24 +108,9 @@ class GameActivity : AppCompatActivity() {
         binding.readyBtn.setOnClickListener {
             binding.getReady.isVisible = false
             binding.controls.isVisible = true
-            gyroListener.startMeasuring()
-
-            gyroListener.setOnSensorDataReceived {
-                /*
-                 * data format:
-                 * 3 floats - rotation angles
-                 * 1 float - acceleration
-                 *
-                 * messages must be of constant size specified in messageSize
-                 */
-
-                val messageSize = 12 + 4
-                val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
-                buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
-                buffer.putFloat(accelerationValue)
-                val bytes = buffer.array()
-                sendMessage(bytes)
-            }
+            // gyroListener.startMeasuring()
+            gyroListener.getEulerAngles(orientationInitial)
+            initiated = true
         }
 
         // initialize sound effects
@@ -138,7 +133,6 @@ class GameActivity : AppCompatActivity() {
                         val isColliding = buffer.int
                         val hash = buffer.float
 
-                        Log.e("new batch", "$newX $newY $newZ $isColliding")
                         if(hash == newX + newY + newZ + newSpeed + isColliding) {
                             x = newX
                             y = newY
@@ -267,18 +261,37 @@ class GameActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(gyroListener, accelerometerSensor, SensorManager.SENSOR_DELAY_UI)
-        sensorManager.registerListener(gyroListener, geomagneticSensor, SensorManager.SENSOR_DELAY_UI)
+        gyroListener.start()
     }
 
     override fun onPause() {
         super.onPause()
-        sensorManager.unregisterListener(gyroListener)
+        gyroListener.stop()
     }
 
     override fun onDestroy() {
         super.onDestroy()
         if (SetupConnectionActivity.socket.isConnected)
             SetupConnectionActivity.socket.close()
+    }
+
+    override fun notifySensorDataReceived() {
+        if (initiated) {
+            val angles = FloatArray(4)
+            gyroListener.getEulerAngles(angles)
+            for (i in 0..3) {
+                angles[i] = ((angles[i] - orientationInitial[i]) / Math.PI).toFloat()
+                if (angles[i] < -1)
+                    angles[i] = angles[i] + 2.0f
+                if (angles[i] > 1)
+                    angles[i] = angles[i] - 2.0f
+            }
+            val messageSize = 12 + 4
+            val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
+            buffer.putFloat(angles[1]).putFloat(angles[0]).putFloat(angles[2])
+            buffer.putFloat(accelerationValue)
+            val bytes = buffer.array()
+            sendMessage(bytes)
+        }
     }
 }

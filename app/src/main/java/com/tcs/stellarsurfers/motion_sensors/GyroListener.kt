@@ -1,4 +1,6 @@
 package com.tcs.stellarsurfers.motion_sensors
+import com.tcs.stellarsurfers.motion_sensors.orientationProvider.OrientationProvider
+import com.tcs.stellarsurfers.motion_sensors.orientationProvider.ImprovedOrientationSensor1Provider
 
 import android.hardware.Sensor
 import android.hardware.SensorEvent
@@ -8,6 +10,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+
 
 class GyroListener : SensorEventListener {
     // Create a constant to convert nanoseconds to seconds.
