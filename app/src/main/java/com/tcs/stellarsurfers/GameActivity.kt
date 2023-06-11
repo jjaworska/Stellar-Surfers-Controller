@@ -10,6 +10,7 @@ import android.hardware.SensorManager
 import android.os.*
 import android.text.SpannableString
 import android.text.style.RelativeSizeSpan
+import android.util.Log
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.SeekBar
@@ -110,28 +111,44 @@ class GameActivity : AppCompatActivity() {
         }
 
         MainScope().launch {
-            val messageLength = 24
-            val message = ByteArray(messageLength)
+            val messageLength = 32
+            val messageBuffer = ByteArray(2 * messageLength)
             while(true) {
                 withContext(Dispatchers.IO) {
-                    val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
-                    if(len == messageLength) {
-                        val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
-                        val newX = buffer.float
-                        val newY = buffer.float
-                        val newZ = buffer.float
-                        val newSpeed = buffer.float
-                        val isColliding = buffer.int
-                        val hash = buffer.float
+                    val len = SetupConnectionActivity.socket.inputStream.read(messageBuffer, 0, 2 * messageLength)
+                    Log.d("Bluetooth", "read $len bytes")
+                    if (len >= messageLength) {
+                        for (i in 1..messageLength) {
+                            var cnt0 = 0
+                            var cnt1 = 0
+                            while (cnt0 < 4 && messageBuffer[i + cnt0] == 0x00.toByte())
+                                cnt0++
+                            while (cnt1 < 4 && messageBuffer[i + 4 + cnt1] == 0xFF.toByte())
+                                cnt1++
+                            val message = ByteArray(messageLength - 8)
+                            if (cnt0 == 4 && cnt1 == 4) {
+                                Log.d("Bluetooth", "Worked for $i")
+                                messageBuffer.copyInto(message, 0, i + 8, i + messageLength)
+                                val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
+                                val newX = buffer.float
+                                val newY = buffer.float
+                                val newZ = buffer.float
+                                val newSpeed = buffer.float
+                                val isColliding = buffer.int
+                                val hash = buffer.float
 
-                        if(hash == newX + newY + newZ + newSpeed + isColliding) {
-                            x = newX
-                            y = newY
-                            z = newZ
-                            speed = newSpeed
-                            if (isColliding != colliding)
-                                collisionStateChange(isColliding)
-                            updateMonitor()
+                                Log.e("Bluetooth", "$isColliding $newX $newY $newZ $newSpeed $hash")
+                                if(hash == newX + newY + newZ + newSpeed + isColliding) {
+                                    x = newX
+                                    y = newY
+                                    z = newZ
+                                    speed = newSpeed
+                                    if (isColliding != colliding)
+                                        collisionStateChange(isColliding)
+                                    updateMonitor()
+                                }
+                                break
+                            }
                         }
                     }
                 }
