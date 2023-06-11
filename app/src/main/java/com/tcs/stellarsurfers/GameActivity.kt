@@ -119,29 +119,48 @@ class GameActivity : AppCompatActivity(), OrientationProviderListener {
         gameOverSound = MediaPlayer.create(applicationContext, R.raw.tinnitus2)
 
         MainScope().launch {
-            val messageLength = 24
+            val messageLength = 40
             val message = ByteArray(messageLength)
             while(true) {
                 withContext(Dispatchers.IO) {
                     val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
+                    Log.d("Bluetooth", "$len")
                     if(len == messageLength) {
                         val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
-                        val newX = buffer.float
-                        val newY = buffer.float
-                        val newZ = buffer.float
-                        val newSpeed = buffer.float
-                        val isColliding = buffer.int
-                        val hash = buffer.float
-
-                        if(hash == newX + newY + newZ + newSpeed + isColliding) {
-                            x = newX
-                            y = newY
-                            z = newZ
-                            speed = newSpeed
-                            if (isColliding != colliding) {
-                                collisionStateChange(isColliding)
+                        var tmp : Byte
+                        var counter : Int = 0
+                        var counter2 : Int = 0
+                        var wtf : Boolean = false
+                        while(counter < 4){
+//                            Log.d("Bluetooth", "$counter2")
+                            tmp = buffer.get()
+                            if(tmp == 0xFF.toByte())
+                                counter++
+                            counter2++
+                            if(counter2 == len){
+                                wtf = true
+                                break
                             }
-                            updateMonitor()
+                        }
+                        if(!wtf) {
+//                            Log.d("Bluetooth", "$counter")
+                            val newX = buffer.float
+                            val newY = buffer.float
+                            val newZ = buffer.float
+                            val newSpeed = buffer.float
+                            val isColliding = buffer.int
+                            val hash = buffer.float
+//                            Log.d("Bluetooth", "$newX $newY $newZ $isColliding")
+                            if (hash == newX + newY + newZ + newSpeed + isColliding) {
+                                x = newX
+                                y = newY
+                                z = newZ
+                                speed = newSpeed
+                                if (isColliding != colliding) {
+                                    collisionStateChange(isColliding)
+                                }
+                                updateMonitor()
+                            }
                         }
                     }
                 }
