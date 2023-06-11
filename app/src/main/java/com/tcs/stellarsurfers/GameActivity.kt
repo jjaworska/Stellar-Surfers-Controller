@@ -1,15 +1,20 @@
 package com.tcs.stellarsurfers
 
+import android.animation.ObjectAnimator
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.graphics.PorterDuff
 import android.graphics.PorterDuffColorFilter
+import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.TransitionDrawable
 import android.hardware.Sensor
 import android.hardware.SensorManager
+import android.media.MediaPlayer
 import android.os.*
 import android.text.SpannableString
 import android.text.style.RelativeSizeSpan
+import android.util.Log
 import android.view.animation.AlphaAnimation
 import android.view.animation.Animation
 import android.widget.SeekBar
@@ -19,6 +24,7 @@ import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
+import com.tcs.stellarsurfers.utils.StatsCollector
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
@@ -43,6 +49,7 @@ class GameActivity : AppCompatActivity() {
     private var accelerationValue: Float = 0.0f
     private val socket = SetupConnectionActivity.socket
     private val gyroListener = GyroListener()
+    private val statsCollector = StatsCollector()
 
     private var x: Float = 0.0f
     private var y: Float = 0.0f
@@ -53,6 +60,10 @@ class GameActivity : AppCompatActivity() {
     private var damage: Int = 0
     private var statistics: String = "speed\nX: $x\nY: $y\nZ: $z"
     private var collisionLog: String = "\n"
+
+    private lateinit var collisionSound: MediaPlayer
+    private lateinit var successSound: MediaPlayer
+    private lateinit var gameOverSound: MediaPlayer
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -90,16 +101,9 @@ class GameActivity : AppCompatActivity() {
         binding.readyBtn.setOnClickListener {
             binding.getReady.isVisible = false
             binding.controls.isVisible = true
+            statsCollector.init()
             gyroListener.startMeasuring()
             gyroListener.setOnSensorDataReceived {
-                /*
-                 * data format:
-                 * 3 floats - rotation angles
-                 * 1 float - acceleration
-                 *
-                 * messages must be of constant size specified in messageSize
-                 */
-
                 val messageSize = 12 + 4
                 val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
                 buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
@@ -108,6 +112,11 @@ class GameActivity : AppCompatActivity() {
                 sendMessage(bytes)
             }
         }
+
+        // initialize sound effects
+        collisionSound = MediaPlayer.create(applicationContext, R.raw.collision1)
+        successSound = MediaPlayer.create(applicationContext, R.raw.success2)
+        gameOverSound = MediaPlayer.create(applicationContext, R.raw.tinnitus2)
 
         MainScope().launch {
             val messageLength = 24
@@ -124,6 +133,7 @@ class GameActivity : AppCompatActivity() {
                         val isColliding = buffer.int
                         val hash = buffer.float
 
+                        Log.d("Bluetooth", "$isColliding, $newX, $newY, $newZ, $newSpeed")
                         if(hash == newX + newY + newZ + newSpeed + isColliding) {
                             x = newX
                             y = newY
@@ -131,6 +141,7 @@ class GameActivity : AppCompatActivity() {
                             speed = newSpeed
                             if (isColliding != colliding)
                                 collisionStateChange(isColliding)
+                            statsCollector.updateSpeed(speed)
                             updateMonitor()
                         }
                     }
@@ -141,22 +152,42 @@ class GameActivity : AppCompatActivity() {
 
     }
 
-    private fun gameOver() {
+    private suspend fun gameOver() {
+        withContext(Dispatchers.Main) {
+            gameOverSound.start()
+        }
         this@GameActivity.runOnUiThread {
             binding.controls.isVisible = false
             binding.gameOver.isVisible = true
-            binding.root.invalidate()
+            val colors = arrayOf(ColorDrawable(Color.BLACK), ColorDrawable(Color.RED))
+            val mTransition = TransitionDrawable(colors)
+            binding.gameOver.background = mTransition
+            mTransition.startTransition(5000)
+            val anim = ObjectAnimator.ofInt(binding.gameOver, "scrollY", 0, binding.gameOver.getBottom()).setDuration(2000)
+            Handler(Looper.getMainLooper()).postDelayed({
+                anim.start()
+            }, 5000)
+            binding.gameOverText.isVisible = true
+            val gameOverAnimation = AlphaAnimation(0.0f, 1.0f)
+            gameOverAnimation.duration = 2000
+            binding.gameOverText.startAnimation(gameOverAnimation)
+            binding.stats.text = statsCollector.getStats()
         }
 
         vibrate(1000)
         Handler(Looper.getMainLooper()).postDelayed({
             startActivity(Intent(this, MainActivity::class.java))
-        }, 3000)
+        }, 15000)
     }
 
-    private fun collisionStateChange(newState: Int) {
+    private suspend fun collisionStateChange(newState: Int) {
         colliding = newState
         if (colliding == 1) {  // COLLIDING
+            // play collision sound
+            statsCollector.notifyHit()
+            withContext(Dispatchers.Default) {
+                collisionSound.start()
+            }
             vibrate(500)
             val damagePts = (abs(speed) * 30).roundToInt()
             damage = min(damage + damagePts, 30)
@@ -225,7 +256,7 @@ class GameActivity : AppCompatActivity() {
     private fun sendMessage(message: ByteArray) {
         try {
             socket.outputStream.write(message)
-            socket.outputStream.flush()
+            // socket.outputStream.flush()
         } catch (ignored: IOException) {
             ignored.printStackTrace()
         }

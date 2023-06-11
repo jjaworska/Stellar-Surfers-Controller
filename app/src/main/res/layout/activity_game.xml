@@ -150,21 +150,36 @@
 
         </LinearLayout>
 
-        <LinearLayout
+        <ScrollView
             android:id="@+id/game_over"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:visibility="invisible"
             android:background="@color/red" >
-            <TextView
+            <LinearLayout
+                android:orientation="vertical"
                 android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:textSize="40sp"
-                android:textColor="@color/white"
-                android:fontFamily="@font/fancy"
-                android:text="@string/game_over"/>
-        </LinearLayout>
+                android:layout_height="wrap_content" >
+                <TextView
+                    android:id="@+id/game_over_text"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:textSize="100sp"
+                    android:padding="40dp"
+                    android:textColor="@color/white"
+                    android:fontFamily="@font/fancy"
+                    android:text="@string/game_over"/>
+                <TextView
+                    android:id="@+id/stats"
+                    android:fontFamily="@font/monospace"
+                    android:padding="20dp"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="24sp"
+                    android:gravity="center" />
+            </LinearLayout>
+        </ScrollView>
 
     </FrameLayout>
 
