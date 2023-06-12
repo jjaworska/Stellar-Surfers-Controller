@@ -11,17 +11,22 @@ class StatsCollector {
     var collisionCount = 0
     private var timestamp: Long = 0
     private var timestamp0: Long = 0
+    private var frameCnt: Long = 0
     // to calculate the average
     private var speedSum = 0.0
     public fun init() {
         timestamp0 = System.currentTimeMillis()
+        timestamp = timestamp0
     }
     public fun updateSpeed(speed: Float) {
         val newTimestamp = System.currentTimeMillis()
         val deltaTime = (newTimestamp - timestamp)
-        totalDistance += deltaTime * speed
+        // totalDistance += deltaTime * speed
         maxSpeed = max(speed, maxSpeed)
-        speedSum += speed.toDouble() * deltaTime
+        // speedSum += speed.toDouble() * deltaTime
+        speedSum += speed.toDouble()
+        timestamp = newTimestamp
+        frameCnt += 1
     }
     public fun notifyHit() {
         collisionCount += 1
@@ -31,6 +36,7 @@ class StatsCollector {
         val totalTimeMillis = timestamp - timestamp0
         val avgSpeed = speedSum / totalTimeMillis
         val format = SimpleDateFormat("mm:ss")
+        totalDistance = (totalTimeMillis.toFloat() * avgSpeed.toFloat() / 1000.0f)
         return "Statistics:\n" +
                 "time: ${format.format(Date(totalTimeMillis))}\n" +
                 "average speed: ${"%.3f".format(avgSpeed)}\n" +

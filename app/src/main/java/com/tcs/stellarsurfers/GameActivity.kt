@@ -124,6 +124,7 @@ class GameActivity : AppCompatActivity() {
             while(true) {
                 withContext(Dispatchers.IO) {
                     val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
+                    Log.i("bluetooth", "$len")
                     if(len == messageLength) {
                         val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
                         val newX = buffer.float

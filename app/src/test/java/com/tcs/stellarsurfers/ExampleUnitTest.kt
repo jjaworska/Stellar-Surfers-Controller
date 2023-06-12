@@ -1,4 +1,5 @@
 package com.tcs.stellarsurfers
+import com.tcs.stellarsurfers.utils.StatsCollector
 
 import org.junit.Test
 
