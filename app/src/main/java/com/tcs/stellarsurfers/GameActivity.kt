@@ -12,6 +12,7 @@ import android.hardware.Sensor
 import android.hardware.SensorManager
 import android.media.MediaPlayer
 import android.os.*
+import android.speech.tts.TextToSpeech
 import android.text.SpannableString
 import android.text.style.RelativeSizeSpan
 import android.util.Log
@@ -30,13 +31,11 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.IOException
-import java.lang.Integer.min
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.text.SimpleDateFormat
 import java.util.Date
-import kotlin.math.abs
-import kotlin.math.roundToInt
+import java.util.Locale
 
 
 class GameActivity : AppCompatActivity() {
@@ -51,19 +50,11 @@ class GameActivity : AppCompatActivity() {
     private val gyroListener = GyroListener()
     private val statsCollector = StatsCollector()
 
-    private var x: Float = 0.0f
-    private var y: Float = 0.0f
-    private var z: Float = 0.0f
-    private var speed: Float = 0.0f
-    private var accel: Float = 0.0f
-    private var colliding: Int = 0
-    private var damage: Int = 0
-    private var statistics: String = "speed\nX: $x\nY: $y\nZ: $z"
-    private var collisionLog: String = "\n"
-
+    private lateinit var textToSpeech: TextToSpeech
     private lateinit var collisionSound: MediaPlayer
     private lateinit var successSound: MediaPlayer
     private lateinit var gameOverSound: MediaPlayer
+    private lateinit var blinking: Animation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -82,7 +73,7 @@ class GameActivity : AppCompatActivity() {
         binding.acceleration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
                 accelerationValue = (progress.toFloat() - 20.0f) / 10.0f
-                accel = accelerationValue
+                statsCollector.accel = accelerationValue
                 updateMonitor()
             }
 
@@ -95,8 +86,8 @@ class GameActivity : AppCompatActivity() {
             }
         })
 
-        val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
-        binding.damage.text = s
+        // val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
+        binding.damage.text = statsCollector.getDamageStr()
 
         binding.readyBtn.setOnClickListener {
             binding.getReady.isVisible = false
@@ -111,6 +102,15 @@ class GameActivity : AppCompatActivity() {
                 val bytes = buffer.array()
                 sendMessage(bytes)
             }
+            Log.d("Bluetooth", Locale.getAvailableLocales().toString())
+            textToSpeech = TextToSpeech(this) {
+                if (it == TextToSpeech.SUCCESS) {
+                    val result = textToSpeech.setLanguage(Locale.UK)
+                    if (result == TextToSpeech.LANG_MISSING_DATA || result == TextToSpeech.LANG_NOT_SUPPORTED) {
+                        Log.e("TTS", "The Language not supported!")
+                    }
+                }
+            }
         }
 
         // initialize sound effects
@@ -118,39 +118,49 @@ class GameActivity : AppCompatActivity() {
         successSound = MediaPlayer.create(applicationContext, R.raw.success2)
         gameOverSound = MediaPlayer.create(applicationContext, R.raw.tinnitus2)
 
+        blinking = AlphaAnimation(0.0f, 1.0f)
+        blinking.duration = 500
+        blinking.startOffset = 20
+        blinking.repeatMode = Animation.REVERSE
+
         MainScope().launch {
             val messageLength = 24
             val message = ByteArray(messageLength)
             while(true) {
                 withContext(Dispatchers.IO) {
                     val len = SetupConnectionActivity.socket.inputStream.read(message, 0, messageLength)
-                    Log.i("bluetooth", "$len")
-                    if(len == messageLength) {
+                    // Log.i("bluetooth", "$len")
+                    if (len == messageLength) {
                         val buffer = ByteBuffer.wrap(message).order(ByteOrder.LITTLE_ENDIAN)
                         val newX = buffer.float
                         val newY = buffer.float
                         val newZ = buffer.float
                         val newSpeed = buffer.float
-                        val isColliding = buffer.int
+                        val collisionInfo= buffer.int
                         val hash = buffer.float
 
-                        Log.d("Bluetooth", "$isColliding, $newX, $newY, $newZ, $newSpeed")
-                        if(hash == newX + newY + newZ + newSpeed + isColliding) {
-                            x = newX
-                            y = newY
-                            z = newZ
-                            speed = newSpeed
-                            if (isColliding != colliding)
-                                collisionStateChange(isColliding)
-                            statsCollector.updateSpeed(speed)
+                        if (collisionInfo > 0)
+                            Log.d("Bluetooth", "$collisionInfo, $newX, $newY, $newZ, $newSpeed")
+                        if(hash == newX + newY + newZ + newSpeed + collisionInfo) {
+                            // Log.d("Bluetooth", "Correct hash")
+                            statsCollector.x = newX
+                            statsCollector.y = newY
+                            statsCollector.z = newZ
+                            statsCollector.update(newSpeed, collisionInfo)
+                            if (statsCollector.shouldNotifyCollision())
+                                notifyCollision()
+                            if (statsCollector.shouldNotifyCollisionAheadPlanet())
+                                notifyCollisionAheadPlanet()
+                            if (statsCollector.shouldNotifyCollisionAheadAsteroid())
+                                notifyCollisionAheadAsteroid()
                             updateMonitor()
                         }
                     }
                 }
-
             }
         }
 
+        /*  */
     }
 
     private suspend fun gameOver() {
@@ -170,9 +180,9 @@ class GameActivity : AppCompatActivity() {
             }, 5000)
             binding.gameOverText.isVisible = true
             val gameOverAnimation = AlphaAnimation(0.0f, 1.0f)
-            gameOverAnimation.duration = 2000
+            gameOverAnimation.duration = 4000
             binding.gameOverText.startAnimation(gameOverAnimation)
-            binding.stats.text = statsCollector.getStats()
+            binding.stats.text = statsCollector.getFinalStatistics()
         }
 
         vibrate(1000)
@@ -181,53 +191,47 @@ class GameActivity : AppCompatActivity() {
         }, 15000)
     }
 
-    private suspend fun collisionStateChange(newState: Int) {
-        colliding = newState
-        if (colliding == 1) {  // COLLIDING
-            // play collision sound
-            statsCollector.notifyHit()
-            withContext(Dispatchers.Default) {
-                collisionSound.start()
-            }
-            vibrate(500)
-            val damagePts = (abs(speed) * 30).roundToInt()
-            damage = min(damage + damagePts, 30)
-            val s = "Engine damage\n" + "*".repeat(damage) + ".".repeat(30 - damage)
-            binding.damage.text = s
-            if (damage >= 20) {  // start blinking
-                binding.controlCollision.colorFilter =
-                    PorterDuffColorFilter(Color.RED, PorterDuff.Mode.SRC_ATOP)
-                val blinking: Animation = AlphaAnimation(0.0f, 1.0f)
-                blinking.duration = 500
-                blinking.startOffset = 20
-                blinking.repeatMode = Animation.REVERSE
-                blinking.repeatCount = Animation.INFINITE
-                binding.controlCollision.startAnimation(blinking)
-            }
-            // create log entry
-            val sdf = SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z")
-            val currentDateAndTime = sdf.format(Date())
-            var newLog = "\$ $currentDateAndTime: "
-            if (damagePts < 3)
-                newLog += "minor collision"
-            else if (damagePts <= 5)
-                newLog += "collision"
-            else
-                newLog += "major collision"
-            if (collisionLog.count{it == '\n'} > 2)
-                collisionLog = collisionLog.substring(collisionLog.indexOf('\n') + 1)
-            collisionLog += '\n'
-            collisionLog += newLog
-            if (damage >= 30)
-                gameOver()
+    private suspend fun notifyCollision() {
+        // play collision sound
+        withContext(Dispatchers.Default) {
+            collisionSound.start()
         }
+        vibrate(500)
+        binding.damage.text = statsCollector.getDamageStr()
+        if (statsCollector.damage >= 20) {  // start blinking
+            textToSpeech.speak("Engine condition: critical", TextToSpeech.QUEUE_FLUSH, null, "none at all")
+            binding.controlCollision.colorFilter =
+                PorterDuffColorFilter(Color.RED, PorterDuff.Mode.SRC_ATOP)
+            val constantBlinking = blinking
+            constantBlinking.repeatCount = Animation.INFINITE
+            binding.controlCollision.startAnimation(blinking)
+        }
+        if (statsCollector.damage >= 30)
+            gameOver()
+    }
+
+    private suspend fun notifyCollisionAheadPlanet() {
+        Log.e("GameActivity", "collision ahead!")
+        textToSpeech.speak("Warning, planet ahead", TextToSpeech.QUEUE_FLUSH, null, "none at all")
+        val blink = blinking
+        blink.repeatCount = 1
+        binding.controlTba.startAnimation(blink)
+    }
+
+    private suspend fun notifyCollisionAheadAsteroid() {
+        Log.e("GameActivity", "collision ahead (asteroid)!")
+        textToSpeech.speak("Warning, asteroid ahead", TextToSpeech.QUEUE_FLUSH, null, "none at all")
+        val blink = blinking
+        blink.repeatCount = 1
+        binding.controlTba.startAnimation(blink)
     }
 
     private fun updateMonitor() {
         this@GameActivity.runOnUiThread {
-            statistics = "Speed: $speed\nX: $x\nY: $y\nZ: $z"
+            // statistics = "Speed: $speed\nX: $x\nY: $y\nZ: $z"
+            val statistics = statsCollector.getStatsString()
             val l: Int = statistics.length
-            val s = SpannableString(statistics + "\n" + collisionLog)
+            val s = SpannableString(statistics + "\n" + statsCollector.getCollisionLog())
             s.setSpan(RelativeSizeSpan(0.6f), l + 1, s.length, 0)
             binding.monitor.text = s
             // speed control light color

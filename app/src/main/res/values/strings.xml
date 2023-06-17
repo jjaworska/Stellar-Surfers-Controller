@@ -25,6 +25,7 @@
     <string name="compass">compass</string>
     <string name="control_light">Control light</string>
     <string name="game_over">GAME\nOVER</string>
-    <string name="engine_power">  Engine power: </string>
-    <string name="engine_health">  Engine health: </string>
+    <string name="engine_power">  Engine power:  </string>
+    <string name="engine_health">  Engine health:  </string>
+    <string name="radar">  Radar:  </string>
 </resources>

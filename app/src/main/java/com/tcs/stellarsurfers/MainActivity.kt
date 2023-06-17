@@ -39,7 +39,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        sensorManager.registerListener(gyroListener, accelerometerSensor, SensorManager.SENSOR_DELAY_GAME);
+        sensorManager.registerListener(gyroListener, accelerometerSensor, SensorManager.SENSOR_DELAY_GAME)
         sensorManager.registerListener(gyroListener, geomagneticSensor, SensorManager.SENSOR_DELAY_GAME)
     }
 
