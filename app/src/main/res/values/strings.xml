@@ -28,4 +28,5 @@
     <string name="engine_power">  Engine power:  </string>
     <string name="engine_health">  Engine health:  </string>
     <string name="radar">  Radar:  </string>
+    <string name="shoot">Shoot!</string>
 </resources>

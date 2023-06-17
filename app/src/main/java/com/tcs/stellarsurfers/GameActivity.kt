@@ -23,6 +23,7 @@ import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
 import androidx.databinding.DataBindingUtil
+import com.tcs.stellarsurfers.SetupConnectionActivity.Companion.socket
 import com.tcs.stellarsurfers.databinding.ActivityGameBinding
 import com.tcs.stellarsurfers.motion_sensors.GyroListener
 import com.tcs.stellarsurfers.utils.StatsCollector
@@ -50,6 +51,12 @@ class GameActivity : AppCompatActivity() {
     private val gyroListener = GyroListener()
     private val statsCollector = StatsCollector()
 
+    /* for outcoming messages */
+    val messageSize = 20
+    private val MSG_INFO = 10
+    private val MSG_SHOOT = 11
+    private val MSG_DEAD = 12
+
     private lateinit var textToSpeech: TextToSpeech
     private lateinit var collisionSound: MediaPlayer
     private lateinit var successSound: MediaPlayer
@@ -69,6 +76,10 @@ class GameActivity : AppCompatActivity() {
 
         accelerometerSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
         geomagneticSensor = sensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD)
+
+        binding.shoot.setOnClickListener {
+            shoot(0.0f, 0.0f)
+        }
 
         binding.acceleration.setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
             override fun onProgressChanged(seekBar: SeekBar?, progress: Int, fromUser: Boolean) {
@@ -95,8 +106,8 @@ class GameActivity : AppCompatActivity() {
             statsCollector.init()
             gyroListener.startMeasuring()
             gyroListener.setOnSensorDataReceived {
-                val messageSize = 12 + 4
                 val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
+                buffer.putInt(MSG_INFO)
                 buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
                 buffer.putFloat(accelerationValue)
                 val bytes = buffer.array()
@@ -159,8 +170,6 @@ class GameActivity : AppCompatActivity() {
                 }
             }
         }
-
-        /*  */
     }
 
     private suspend fun gameOver() {
@@ -250,6 +259,14 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
+    private fun shoot(x: Float, y: Float) {
+        val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.putInt(MSG_SHOOT)
+        buffer.putFloat(x).putFloat(y).putFloat(0.0f).putFloat(0.0f)
+        val bytes = buffer.array()
+        sendMessage(bytes)
+    }
+
     private fun vibrate(duration: Long) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
@@ -261,7 +278,6 @@ class GameActivity : AppCompatActivity() {
     private fun sendMessage(message: ByteArray) {
         try {
             socket.outputStream.write(message)
-            // socket.outputStream.flush()
         } catch (ignored: IOException) {
             ignored.printStackTrace()
         }
