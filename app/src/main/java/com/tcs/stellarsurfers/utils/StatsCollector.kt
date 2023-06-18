@@ -67,7 +67,7 @@ class StatsCollector {
         val sdf = SimpleDateFormat("yyyy.MM.dd G 'at' HH:mm:ss z")
         val currentDateAndTime = sdf.format(Date())
         var newLog = "\$ $currentDateAndTime: "
-        val damagePts: Int = (kotlin.math.abs(speed) * 30).roundToInt()
+        val damagePts: Int = (kotlin.math.abs(speed) * 500).roundToInt()
         damage = (damage + damagePts).coerceAtMost(30)
         if (damagePts < 3)
             newLog += "minor collision"
