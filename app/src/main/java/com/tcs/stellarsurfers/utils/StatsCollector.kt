@@ -14,6 +14,7 @@ class StatsCollector {
     private val INFO_COLLISION = 1
     private val INFO_COLLISION_AHEAD_PLANET = 2
     private val INFO_COLLISION_AHEAD_ASTEROID = 3
+    private val INFO_ASTEROID_SHOT = 4
     // private var statistics: String = "speed\nX: $x\nY: $y\nZ: $z"
     private var collisionLog: String = "\n"
     private var totalDistance = 0.0f
@@ -50,6 +51,8 @@ class StatsCollector {
         if (collisionInfo != collisionStatus) {
             if (collisionInfo == INFO_COLLISION)
                 newCollision()
+            if (collisionInfo == INFO_ASTEROID_SHOT)
+                asteroidsShot += 1
             if (collisionStatus == INFO_COLLISION && collisionInfo != INFO_SAFE)
                 return
             collisionStatus = collisionInfo
@@ -111,6 +114,12 @@ class StatsCollector {
 
     fun shouldNotifyCollisionAheadAsteroid(): Boolean {
         val ans = (collisionStatus == INFO_COLLISION_AHEAD_ASTEROID && !askedCollisionStatus)
+        askedCollisionStatus = (askedCollisionStatus || ans)
+        return ans
+    }
+
+    fun shouldNotifyAsteroidShot(): Boolean {
+        val ans = (collisionStatus == INFO_ASTEROID_SHOT && !askedCollisionStatus)
         askedCollisionStatus = (askedCollisionStatus || ans)
         return ans
     }

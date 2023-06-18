@@ -106,12 +106,7 @@ class GameActivity : AppCompatActivity() {
             statsCollector.init()
             gyroListener.startMeasuring()
             gyroListener.setOnSensorDataReceived {
-                val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
-                buffer.putInt(MSG_INFO)
-                buffer.putFloat(it[0]).putFloat(it[1]).putFloat(it[2])
-                buffer.putFloat(accelerationValue)
-                val bytes = buffer.array()
-                sendMessage(bytes)
+                sendMessage(MSG_INFO, it[0], it[1], it[2], accelerationValue)
             }
             Log.d("Bluetooth", Locale.getAvailableLocales().toString())
             textToSpeech = TextToSpeech(this) {
@@ -128,11 +123,6 @@ class GameActivity : AppCompatActivity() {
         collisionSound = MediaPlayer.create(applicationContext, R.raw.collision1)
         successSound = MediaPlayer.create(applicationContext, R.raw.success2)
         gameOverSound = MediaPlayer.create(applicationContext, R.raw.tinnitus2)
-
-        blinking = AlphaAnimation(0.0f, 1.0f)
-        blinking.duration = 500
-        blinking.startOffset = 20
-        blinking.repeatMode = Animation.REVERSE
 
         MainScope().launch {
             val messageLength = 24
@@ -164,6 +154,8 @@ class GameActivity : AppCompatActivity() {
                                 notifyCollisionAheadPlanet()
                             if (statsCollector.shouldNotifyCollisionAheadAsteroid())
                                 notifyCollisionAheadAsteroid()
+                            if (statsCollector.shouldNotifyAsteroidShot())
+                                notifyAsteroidShot()
                             updateMonitor()
                         }
                     }
@@ -173,6 +165,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     private suspend fun gameOver() {
+        sendMessage(MSG_DEAD, 0.0f, 0.0f, 0.0f, 0.0f)
         withContext(Dispatchers.Main) {
             gameOverSound.start()
         }
@@ -211,28 +204,43 @@ class GameActivity : AppCompatActivity() {
             textToSpeech.speak("Engine condition: critical", TextToSpeech.QUEUE_FLUSH, null, "none at all")
             binding.controlCollision.colorFilter =
                 PorterDuffColorFilter(Color.RED, PorterDuff.Mode.SRC_ATOP)
-            val constantBlinking = blinking
-            constantBlinking.repeatCount = Animation.INFINITE
+
+            val blinking = AlphaAnimation(0.0f, 1.0f)
+            blinking.duration = 500
+            blinking.startOffset = 20
+            blinking.repeatMode = Animation.REVERSE
+            blinking.repeatCount = Animation.INFINITE
             binding.controlCollision.startAnimation(blinking)
         }
         if (statsCollector.damage >= 30)
             gameOver()
     }
 
-    private suspend fun notifyCollisionAheadPlanet() {
+    private fun notifyCollisionAheadPlanet() {
         Log.e("GameActivity", "collision ahead!")
         textToSpeech.speak("Warning, planet ahead", TextToSpeech.QUEUE_FLUSH, null, "none at all")
-        val blink = blinking
-        blink.repeatCount = 1
-        binding.controlTba.startAnimation(blink)
+        val blinking = AlphaAnimation(0.0f, 1.0f)
+        blinking.duration = 500
+        blinking.startOffset = 20
+        blinking.repeatMode = Animation.REVERSE
+        blinking.repeatCount = 1
+        binding.controlTba.startAnimation(blinking)
     }
 
-    private suspend fun notifyCollisionAheadAsteroid() {
+    private fun notifyCollisionAheadAsteroid() {
         Log.e("GameActivity", "collision ahead (asteroid)!")
         textToSpeech.speak("Warning, asteroid ahead", TextToSpeech.QUEUE_FLUSH, null, "none at all")
         val blink = blinking
         blink.repeatCount = 1
         binding.controlTba.startAnimation(blink)
+    }
+
+    private suspend fun notifyAsteroidShot() {
+        Log.e("GameActivity", "Shot asteroid")
+        withContext(Dispatchers.Default) {
+            successSound.start()
+        }
+        textToSpeech.speak("Target shot", TextToSpeech.QUEUE_FLUSH, null, "none at all")
     }
 
     private fun updateMonitor() {
@@ -260,11 +268,7 @@ class GameActivity : AppCompatActivity() {
     }
 
     private fun shoot(x: Float, y: Float) {
-        val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
-        buffer.putInt(MSG_SHOOT)
-        buffer.putFloat(x).putFloat(y).putFloat(0.0f).putFloat(0.0f)
-        val bytes = buffer.array()
-        sendMessage(bytes)
+        sendMessage(MSG_SHOOT, x, y, 0.0f, 0.0f)
     }
 
     private fun vibrate(duration: Long) {
@@ -275,9 +279,13 @@ class GameActivity : AppCompatActivity() {
         }
     }
 
-    private fun sendMessage(message: ByteArray) {
+    private fun sendMessage(info_type: Int, x: Float, y: Float, z: Float, accel: Float) {
+        val buffer = ByteBuffer.allocate(messageSize).order(ByteOrder.LITTLE_ENDIAN)
+        buffer.putInt(info_type)
+        buffer.putFloat(x).putFloat(y).putFloat(z).putFloat(accel)
+        val bytes = buffer.array()
         try {
-            socket.outputStream.write(message)
+            socket.outputStream.write(bytes)
         } catch (ignored: IOException) {
             ignored.printStackTrace()
         }
