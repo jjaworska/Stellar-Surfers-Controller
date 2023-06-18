@@ -61,7 +61,6 @@ class GameActivity : AppCompatActivity() {
     private lateinit var collisionSound: MediaPlayer
     private lateinit var successSound: MediaPlayer
     private lateinit var gameOverSound: MediaPlayer
-    private lateinit var blinking: Animation
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -230,9 +229,13 @@ class GameActivity : AppCompatActivity() {
     private fun notifyCollisionAheadAsteroid() {
         Log.e("GameActivity", "collision ahead (asteroid)!")
         textToSpeech.speak("Warning, asteroid ahead", TextToSpeech.QUEUE_FLUSH, null, "none at all")
-        val blink = blinking
-        blink.repeatCount = 1
-        binding.controlTba.startAnimation(blink)
+        val blinking = AlphaAnimation(0.0f, 1.0f)
+        blinking.duration = 500
+        blinking.startOffset = 20
+        blinking.repeatMode = Animation.REVERSE
+        blinking.repeatCount = 1
+        binding.controlCollision.startAnimation(blinking)
+        binding.controlTba.startAnimation(blinking)
     }
 
     private suspend fun notifyAsteroidShot() {
